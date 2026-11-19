@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: spring-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: eureka-server
+              uri: ${EUREKA_SERVER_URI:http://localhost:8761}
+              predicates:
+                - Path=/eureka/main
+              filters:
+                - SetPath=/
+            - id: eureka-server-static
+              uri: ${EUREKA_SERVER_URI:http://localhost:8761}
+              predicates:
+                - Path=/eureka/**
+            - id: job-service
+              uri: lb://JOB-SERVICE
+              predicates:
+                - Path=/api/v1/jobs/**
+            - id: company-service
+              uri: lb://COMPANY-SERVICE
+              predicates:
+                - Path=/api/v1/companies/**
+            - id: review-service
+              uri: lb://REVIEW-SERVICE
+              predicates:
+                - Path=/api/v1/reviews/**
+
+logging:
+  level:
+    root: info
+    org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
+    org.springframework.cloud.gateway: TRACE
+    reactor.netty.http.client: INFO
+    com.netflix.discovery: INFO
+
+server:
+  port: 8084
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+# Actuator Zipkin
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans

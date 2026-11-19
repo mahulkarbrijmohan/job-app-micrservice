@@ -1,0 +1,134 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: brijmahulkar
+      POSTGRES_PASSWORD: rootroot
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brijmahulkar -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - postgres
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+    ports:
+      - "8761:8761"
+    depends_on:
+      - zipkin
+    networks:
+      - postgres
+
+  spring-gateway:
+    build:
+      context: ./spring-gateway
+    ports:
+      - "8084:8084"
+    environment:
+      EUREKA_SERVER_URI: http://eureka-server:8761
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      eureka-server:
+        condition: service_started
+      zipkin:
+        condition: service_started
+      company-service:
+        condition: service_started
+      review-service:
+        condition: service_started
+      job-service:
+        condition: service_started
+    networks:
+      - postgres
+
+  company-service:
+    build:
+      context: ./company-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+      SPRING_DATASOURCE_USERNAME: brijmahulkar
+      SPRING_DATASOURCE_PASSWORD: rootroot
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      zipkin:
+        condition: service_started
+    networks:
+      - postgres
+
+  review-service:
+    build:
+      context: ./review-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+      SPRING_DATASOURCE_USERNAME: brijmahulkar
+      SPRING_DATASOURCE_PASSWORD: rootroot
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      zipkin:
+        condition: service_started
+    networks:
+      - postgres
+
+  job-service:
+    build:
+      context: ./job-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+      SPRING_DATASOURCE_USERNAME: brijmahulkar
+      SPRING_DATASOURCE_PASSWORD: rootroot
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      zipkin:
+        condition: service_started
+      company-service:
+        condition: service_started
+      review-service:
+        condition: service_started
+    networks:
+      - postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  postgres:
+    driver: bridge
