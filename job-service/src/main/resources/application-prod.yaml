@@ -1,8 +1,15 @@
+job-service:
+  url: http://job-service:8081
+company-service:
+  url: http://company-service:8082
+review-service:
+  url: http://review-service:8083
+
 spring:
   application:
     name: job-service
   datasource:
-    url: jdbc:postgresql://localhost:5433/postgres
+    url: jdbc:postgresql://postgres:5432/postgres
     username: brijmahulkar
     password: rootroot
   jpa:
@@ -12,7 +19,7 @@ spring:
       ddl-auto: update
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   rabbitmq:
-    host: localhost
+    host: rabbitmq
     port: 5672
     username: guest
     password: guest
@@ -22,16 +29,13 @@ spring:
         enabled: true
   config:
     import:
-      - optional:configserver:http://localhost:8080
-  profiles:
-    active:
-      - default
+      - optional:configserver:http://config-server:8080
 server:
   port: 8081
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://eureka-server:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
 # Actuator
@@ -39,6 +43,9 @@ management:
   tracing:
     sampling:
       probability: 1.0
+    export:
+      zipkin:
+        endpoint: http://zipkin:9411/api/v2/spans
   health:
     circuitbreakers:
       enabled: true

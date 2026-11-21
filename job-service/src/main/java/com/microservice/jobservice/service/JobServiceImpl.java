@@ -9,9 +9,11 @@ import com.microservice.jobservice.clients.ReviewClient;
 import com.microservice.jobservice.mapper.JobMapper;
 import com.microservice.jobservice.modal.JobTitle;
 import com.microservice.jobservice.repository.JobRepo;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -20,11 +22,20 @@ public class JobServiceImpl implements JobService {
     private final CompanyClient companyClient;
     private final ReviewClient reviewClient;
     private final JobRepo jobRepo;
+
     @Override
+    @CircuitBreaker(name="companyService",
+                fallbackMethod = "companyServiceFallback")
     public List<JobDTO> findAll() {
 
         List<JobTitle> jobTitles = jobRepo.findAll();
         return jobTitles.stream().map(this::getJobDTO).toList();
+    }
+
+    public List<String> companyServiceFallback(Exception e) {
+        List<String> list = new ArrayList<>();
+        list.add("companyServiceFallback");
+        return list;
     }
 
     @Override

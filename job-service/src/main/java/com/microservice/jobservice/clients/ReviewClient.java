@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "REVIEW-SERVICE", fallback = ReviewClientFallback.class)
+@FeignClient(name = "REVIEW-SERVICE",url = "${review-service.url}", fallback = ReviewClientFallback.class)
 public interface ReviewClient {
 
     @GetMapping("/api/v1/reviews")

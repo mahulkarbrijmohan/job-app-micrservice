@@ -1,3 +1,9 @@
+job-service:
+  url: http://job-service:8081
+company-service:
+  url: http://company-service:8082
+review-service:
+  url: http://review-service:8083
 spring:
   application:
     name: job-service
@@ -11,6 +17,11 @@ spring:
     hibernate:
       ddl-auto: update
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
   cloud:
     openfeign:
       circuitbreaker:
@@ -20,7 +31,7 @@ spring:
       - optional:configserver:http://localhost:8080
   profiles:
     active:
-      - dev
+      - default
 server:
   port: 8081
 eureka:
@@ -34,13 +45,40 @@ management:
   tracing:
     sampling:
       probability: 1.0
+  health:
+    circuitbreakers:
+      enabled: true
   endpoints:
     web:
       exposure:
-        include:
-          - "*"
+        include: "*"
   endpoint:
     health:
       show-details: always
     info:
       access: unrestricted
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+    instances:
+      companyService:
+        baseConfig: default
+      reviewService:
+        baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s
+        cancelRunningFuture: true

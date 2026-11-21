@@ -1,4 +1,4 @@
-package com.microservice.reviewservice.dto;
+package com.microservice.companyservice.dto;
 
 import lombok.Data;
 

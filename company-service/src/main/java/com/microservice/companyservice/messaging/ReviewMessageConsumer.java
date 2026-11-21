@@ -1,22 +1,20 @@
-package com.microservice.reviewservice.messaging;
+package com.microservice.companyservice.messaging;
 
-import com.microservice.reviewservice.dto.ReviewMessage;
-import com.microservice.reviewservice.modal.Review;
+import com.microservice.companyservice.dto.ReviewMessage;
+import com.microservice.companyservice.service.CompanyService;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Service;
 
+@Service
 @RequiredArgsConstructor
-public class ReviewMessageProducer {
-    private final RabbitTemplate rabbitTemplate;
+public class ReviewMessageConsumer {
 
-   public void sendMessage(Review reviewObj ) {
-       ReviewMessage reviewMessage = new ReviewMessage();
-       reviewMessage.setId(reviewObj.getId());
-       reviewMessage.setTitle(reviewObj.getTitle());
-       reviewMessage.setDescription(reviewObj.getDescription());
-       reviewMessage.setRating(reviewObj.getRating());
-       reviewMessage.setCompanyId(reviewObj.getCompanyId());
-       rabbitTemplate.convertAndSend("companyRatingQueue", reviewMessage);
+    private final CompanyService companyService;
 
-   }
+    @RabbitListener(queues = "companyRatingQueue")
+    public void consumeMessage(ReviewMessage reviewObj) {
+        companyService.updateCompany(reviewObj);
+    }
 }

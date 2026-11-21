@@ -1,6 +1,7 @@
 package com.microservice.reviewservice.controller;
 
 
+import com.microservice.reviewservice.messaging.ReviewMessageProducer;
 import com.microservice.reviewservice.modal.Review;
 import com.microservice.reviewservice.service.ReviewService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReviewController {
     private final ReviewService reviewService;
+    private final ReviewMessageProducer reviewMessageProducer;
 
 
     @GetMapping
@@ -25,9 +27,11 @@ public class ReviewController {
     public ResponseEntity<String> addReview(@RequestParam Long companyId,
                                             @RequestBody Review review){
         boolean isReviewSaved = reviewService.addReview(companyId, review);
-        if (isReviewSaved)
+        if (isReviewSaved) {
+            reviewMessageProducer.sendMessage(review);
             return new ResponseEntity<>("Review Added Successfully",
                     HttpStatus.OK);
+        }
         else
             return new ResponseEntity<>("Review Not Saved",
                     HttpStatus.NOT_FOUND);
@@ -64,5 +68,14 @@ public class ReviewController {
         else
             return new ResponseEntity<>("Review not deleted",
                     HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping("/averageRating")
+    public ResponseEntity<Double> getAverageRating(@RequestParam Long companyId){
+        List<Review> reviews = reviewService.getAllReviews(companyId);
+        double finalRating = reviews.stream().mapToDouble(Review :: getRating)
+                .average().orElse(0.0);
+        return new ResponseEntity<>(finalRating, HttpStatus.OK);
+
     }
 }
